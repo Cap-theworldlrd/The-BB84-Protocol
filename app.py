@@ -221,7 +221,7 @@ class BB84Simulation:
 # -----------------------------------------------------------------------------
 pd_streamlit_app.title("⚛️ BB84 Protocol: Interactive Quantum Cryptography Simulator")
 pd_streamlit_app.markdown(
-    "A software testbench developed for **B.Tech Computer Science and Engineering** to simulate physical-layer "
+    "A software testbench developed to simulate physical-layer "
     "information-theoretically secure key distribution over an insecure optical channel. "
     "Adjust the parameters in the sidebar to simulate quantum behaviors, channel noise, and active eavesdropping attacks."
 )
@@ -451,12 +451,12 @@ with tab3:
         
         with st_col1:
             pd_streamlit_app.markdown("### 👩‍💻 Alice's Key Verification")
-            pd_streamlit_app.text_area("Sifted Secret Key Bits", value=results["alice_key"], height=80, disabled=True)
+            pd_streamlit_app.text_area("Alice's Sifted Secret Key Bits", value=results["alice_key"], height=80, disabled=True, key="alice_sifted_key_text")
             pd_streamlit_app.code(f"Integrity Check Hash (SHA-256): {results['alice_hash']}", language="text")
             
         with st_col2:
             pd_streamlit_app.markdown("### 👨‍💻 Bob's Key Verification")
-            pd_streamlit_app.text_area("Sifted Secret Key Bits", value=results["bob_key"], height=80, disabled=True)
+            pd_streamlit_app.text_area("Bob's Sifted Secret Key Bits", value=results["bob_key"], height=80, disabled=True, key="bob_sifted_key_text")
             pd_streamlit_app.code(f"Integrity Check Hash (SHA-256): {results['bob_hash']}", language="text")
             
         pd_streamlit_app.markdown("---")
