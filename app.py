@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # STREAMLIT PAGE CONFIGURATION & STYLING
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="BB84 Quantum Key Distribution – Professional Simulator",
+    page_title="BB84 Quantum Key Distribution Simulator",
     page_icon="⚛️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -60,10 +60,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SECURITY / CRYPTO HELPERS
+# CRYPTO HELPERS
 # -----------------------------------------------------------------------------
 def hmac_sha256(key: bytes, message: str) -> str:
-    """Return HMAC-SHA256 hex digest (used for authenticated classical channel)."""
+    """Return HMAC-SHA256 hex digest used for authentication."""
     return hmac.new(key, message.encode(), hashlib.sha256).hexdigest()
 
 # -----------------------------------------------------------------------------
@@ -436,13 +436,10 @@ class BB84Simulation:
 # -----------------------------------------------------------------------------
 # UI CODE
 # -----------------------------------------------------------------------------
-st.title("⚛️ BB84 Quantum Key Distribution – Professional Simulator")
+st.title("⚛️ BB84 Quantum Key Distribution Simulator")
 st.markdown("""
-This simulator models the **BB84 QKD protocol** with added security layers:
-- **Authenticated classical channel** (HMAC‑SHA256)
-- **Information reconciliation** (parity‑based error correction)
-- **Privacy amplification** (universal hashing)
-- **Depolarising noise** and an **intercept‑resend eavesdropper**
+This simulator demonstrates the BB84 protocol, including quantum transmission,  
+eavesdropping, basis reconciliation, error correction, and privacy amplification.
 """)
 
 st.sidebar.header("⚙️ Simulation Parameters")
@@ -566,7 +563,7 @@ with tab1:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
     fig.patch.set_facecolor('#080E1E')
 
-    # Pie chart
+    # Pie chart – fixed legend overlap
     labels = ['QBER Test', 'Final Key (after EC/PA)', 'Basis Mismatch', 'Raw (post‑sift, pre‑EC)']
     sizes = [
         results['sacrifice_len'],
@@ -575,8 +572,25 @@ with tab1:
         results['remaining_raw_len'] - results['final_len']
     ]
     colors = ['#FFC107', '#00E5FF', '#1E2D5A', '#5B6B8A']
-    ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140,
-            colors=colors, textprops=dict(color="w"))
+
+    wedges, _, _ = ax1.pie(
+        sizes,
+        labels=None,                 # no internal labels
+        autopct='%1.1f%%',
+        startangle=140,
+        colors=colors,
+        pctdistance=0.8,
+        textprops=dict(color="w", fontsize=10)
+    )
+    ax1.legend(
+        wedges,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.1),
+        ncol=2,
+        frameon=False,
+        fontsize=10
+    )
     ax1.set_title("Photon Utilisation", color='#00E5FF', pad=15)
 
     # Bar chart
@@ -667,8 +681,8 @@ with tab3:
             st.error("Final keys do NOT match (should not happen after EC).")
 
         st.info(
-            "SHA‑256 is used only as an educational consistency check. "
-            "It does **not** provide authentication – that is handled by the HMAC layer."
+            "SHA‑256 is used only as a consistency check. "
+            "Authentication is provided by the HMAC layer shown in the Security Log."
         )
 
 # ----- Tab 4: Security Log -----
@@ -693,15 +707,13 @@ with tab4:
     - **Parity bits leaked during EC:** {results['parity_leaked']}
     - **Final key length after PA:** {results['final_len']} bits
     """)
-    st.warning(
-        "**Educational note:** This simulator includes simplified error correction "
-        "and privacy amplification. Real QKD systems use more advanced protocols "
-        "(e.g., Cascade, LDPC) and rigorous security proofs."
+    st.markdown(
+        "The simulation includes simplified error correction and privacy amplification. "
+        "Real QKD systems use more advanced protocols and rigorous security proofs."
     )
 
 # Footer
 st.markdown("---")
 st.markdown(
-    "⚛️ **BB84 Professional Simulator** – built for educational purposes. "
-    "Not for production cryptographic use."
+    "⚛️ **BB84 Quantum Key Distribution Simulator** – explore the protocol step by step."
 )
