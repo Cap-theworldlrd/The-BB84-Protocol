@@ -468,30 +468,3 @@ with tab3:
             "secure key using hashing) and **Error Correction** (e.g. Cascade protocol) to fix minor environmental noise."
         )
 
-# -----------------------------------------------------------------------------
-# DEPLOYMENT GUIDE COLLAPSIBLE
-# -----------------------------------------------------------------------------
-with pd_streamlit_app.expander("🚀 Guide: Host This App For Free"):
-    pd_streamlit_app.markdown("""
-    You can easily host this interactive simulation online for free on **Streamlit Community Cloud** so your project evaluators can access it via a public URL:
-    
-    ### 1. Upload to GitHub
-    1. Create a free account on [GitHub](https://github.com) if you don't have one.
-    2. Create a new public repository (e.g., `bb84-quantum-simulator`).
-    3. Upload this file as `app.py`.
-    4. Create a text file named `requirements.txt` containing:
-       ```text
-       streamlit
-       numpy
-       matplotlib
-       pandas
-       ```
-    
-    ### 2. Launch on Streamlit Community Cloud
-    1. Go to [share.streamlit.io](https://share.streamlit.io) and log in using your GitHub account.
-    2. Click **New app**.
-    3. Select your repository (`bb84-quantum-simulator`), branch (`main`), and set the main file path to `app.py`.
-    4. Click **Deploy!**
-    
-    In under 2 minutes, your interactive simulation will be live at a public URL (e.g., `https://bb84-simulator.streamlit.app`)!
-    """)
