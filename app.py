@@ -6,7 +6,7 @@ import hmac
 import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------------------
-# STREAMLIT PAGE CONFIGURATION & STYLING
+# STREAMLIT PAGE CONFIGURATION (Light theme)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="BB84 Quantum Key Distribution Simulator",
@@ -14,50 +14,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #080E1E;
-        color: #F0F4F8;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: #0D162D !important;
-        border-right: 1px solid #1E2D5A;
-    }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3 {
-        color: #00E5FF !important;
-    }
-    div[data-testid="metric-container"] {
-        background-color: #121B31;
-        border: 1px solid #1E2D5A;
-        border-radius: 8px;
-        padding: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-    div[data-testid="stMetricValue"] {
-        color: #00E5FF !important;
-        font-family: 'Trebuchet MS', sans-serif;
-    }
-    h1, h2, h3 {
-        color: #00E5FF !important;
-        font-family: 'Trebuchet MS', sans-serif;
-    }
-    p, li, span {
-        color: #C0C8D8;
-    }
-    .stAlert {
-        background-color: #121B31 !important;
-        border: 1px solid #1E2D5A !important;
-        color: #F0F4F8 !important;
-    }
-    .stCodeBlock {
-        background-color: #0D162D !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # CRYPTO HELPERS
@@ -110,12 +66,10 @@ class Eve:
                 self.bases.append(basis)
 
                 if basis == 'Z':
-                    # Probability of measuring 0 in Z basis = cos²(θ)
                     prob_0 = np.cos(np.radians(state)) ** 2
                     result = 0 if np.random.random() < prob_0 else 1
                     collapsed_state = 0.0 if result == 0 else 90.0
                 else:  # X basis
-                    # Probability of measuring 0 in X basis = cos²(θ - 45°)
                     prob_plus = np.cos(np.radians(state - 45.0)) ** 2
                     result = 0 if np.random.random() < prob_plus else 1
                     collapsed_state = 45.0 if result == 0 else 135.0
@@ -144,7 +98,6 @@ class Bob:
         """
         self.results = []
         for state, basis in zip(states, self.bases):
-            # Depolarising noise: with probability p, result is random
             if np.random.random() < depolarising_noise:
                 self.results.append(np.random.randint(2))
                 continue
@@ -179,18 +132,12 @@ def binary_error_correction(alice_bits: list, bob_bits: list, block_size: int = 
     errors_corrected = 0
     leaked_parity_bits = 0
 
-    # Work on a copy to avoid modifying original
     bob_corrected = bob.copy()
 
     for iteration in range(max_iterations):
-        # Shuffle indices (could be pre‑agreed) – here we use random permutation based on auth_key
-        # For simplicity, we use a fixed pseudo‑random permutation derived from seed
-        # (In a real system, permutation would be public but authenticated)
-        # We'll just use a deterministic permutation from numpy default_rng.
-        rng = np.random.default_rng(42 + iteration)  # deterministic for demo
+        rng = np.random.default_rng(42 + iteration)  # deterministic permutation
         perm = rng.permutation(n)
 
-        # Process in blocks
         for start in range(0, n, block_size):
             idx = perm[start:start + block_size]
             if len(idx) < 2:
@@ -198,10 +145,9 @@ def binary_error_correction(alice_bits: list, bob_bits: list, block_size: int = 
 
             parity_alice = alice[idx].sum() % 2
             parity_bob = bob_corrected[idx].sum() % 2
-            leaked_parity_bits += 1  # parity bits are publicly announced
+            leaked_parity_bits += 1
 
             if parity_alice != parity_bob:
-                # Binary search for the error within this block
                 low, high = 0, len(idx) - 1
                 while low < high:
                     mid = (low + high) // 2
@@ -215,7 +161,6 @@ def binary_error_correction(alice_bits: list, bob_bits: list, block_size: int = 
                     else:
                         low = mid + 1
 
-                # Flip the erroneous bit in Bob's copy
                 err_pos = idx[low]
                 bob_corrected[err_pos] ^= 1
                 errors_corrected += 1
@@ -230,14 +175,11 @@ def privacy_amplification(bits: list, final_key_length: int, auth_key: bytes = b
     """
     Apply a random universal hash function (matrix multiplication over GF(2))
     to reduce the key to final_key_length bits.
-    This shrinks Eve's information.
     """
     n = len(bits)
     if final_key_length >= n:
         raise ValueError("final_key_length must be smaller than input length")
 
-    # Generate a random binary matrix of size (final_key_length, n)
-    # In practice, the matrix is publicly announced but authenticated.
     rng = np.random.default_rng(int.from_bytes(auth_key[:4], 'big') % (2**32))
     matrix = rng.integers(0, 2, size=(final_key_length, n), dtype=np.uint8)
 
@@ -272,10 +214,7 @@ class BB84Simulation:
         self.enable_pa = enable_privacy_amplification
         self.enable_auth = enable_authentication
 
-        # Pre‑shared secret for authentication (simulated)
         self.auth_key = hashlib.sha256(str(seed).encode()).digest() if enable_auth else b""
-
-        # Set global random seed for reproducibility
         np.random.seed(seed)
 
         self.alice = Alice(num_qubits)
@@ -283,16 +222,10 @@ class BB84Simulation:
         self.bob = Bob(num_qubits)
 
     def run(self):
-        # 1. Alice encodes
         sent_states = self.alice.encode()
-
-        # 2. Eve attack
         channel_states = self.eve.attack(sent_states)
-
-        # 3. Bob measures
         bob_results = self.bob.measure(channel_states, self.depolarising_noise)
 
-        # 4. Sifting
         sifted_indices = [
             i for i in range(self.num_qubits)
             if self.alice.bases[i] == self.bob.bases[i]
@@ -302,7 +235,6 @@ class BB84Simulation:
         if sifted_len == 0:
             return self._abort("No bases matched during reconciliation.")
 
-        # 5. QBER estimation
         num_sacrifice = max(1, int(sifted_len * self.sacrifice_pct))
         sacrifice_indices = np.random.choice(sifted_indices, size=num_sacrifice, replace=False)
         errors = sum(
@@ -311,16 +243,13 @@ class BB84Simulation:
         )
         qber = errors / num_sacrifice
 
-        # 6. Security check
         if qber >= self.threshold:
             return self._abort(f"QBER {qber:.2%} ≥ threshold {self.threshold:.2%}")
 
-        # 7. Remove sacrifice bits
         remaining_indices = [i for i in sifted_indices if i not in sacrifice_indices]
         alice_raw = [self.alice.bits[i] for i in remaining_indices]
         bob_raw = [self.bob.results[i] for i in remaining_indices]
 
-        # 8. Error correction (optional)
         if self.enable_ec and len(alice_raw) > 0:
             bob_corrected, ec_errors, parity_leaked = binary_error_correction(
                 alice_raw, bob_raw,
@@ -333,12 +262,7 @@ class BB84Simulation:
             ec_errors = 0
             parity_leaked = 0
 
-        # 9. Privacy amplification (optional)
         if self.enable_pa and len(alice_raw) > 0:
-            # Estimate Eve's information: for intercept‑resend, roughly half of Eve's measurements
-            # in the wrong basis cause errors; we use a heuristic to set final length.
-            # In a real system, this would be based on QBER.
-            # We'll use a conservative formula: final length = int( (1 - qber - 0.05) * len(alice_raw) )
             final_len = max(1, int((1 - qber - 0.05) * len(alice_raw)))
             alice_final = privacy_amplification(alice_raw, final_len, self.auth_key)
             bob_final = privacy_amplification(bob_corrected, final_len, self.auth_key)
@@ -347,19 +271,15 @@ class BB84Simulation:
             alice_final = alice_raw
             bob_final = bob_corrected
 
-        # 10. Compare final keys
         keys_match = (alice_final == bob_final)
 
-        # 11. Hash for educational display (not a security feature)
         alice_key_str = "".join(map(str, alice_final))
         bob_key_str = "".join(map(str, bob_final))
         alice_hash = hashlib.sha256(alice_key_str.encode()).hexdigest()[:16] if alice_key_str else "N/A"
         bob_hash = hashlib.sha256(bob_key_str.encode()).hexdigest()[:16] if bob_key_str else "N/A"
 
-        # 12. Simulate authentication of public messages (show in UI)
         auth_log = []
         if self.enable_auth:
-            # Example: authenticate basis announcements
             alice_bases_msg = "".join(self.alice.bases)
             bob_bases_msg = "".join(self.bob.bases)
             alice_bases_tag = hmac_sha256(self.auth_key, "Alice_bases:" + alice_bases_msg)
@@ -367,19 +287,16 @@ class BB84Simulation:
             auth_log.append(("Alice's basis announcement", alice_bases_tag[:16]))
             auth_log.append(("Bob's basis announcement", bob_bases_tag[:16]))
 
-            # Authenticate parity info (if EC used)
             if self.enable_ec:
                 parity_msg = f"Parity info (leaked {parity_leaked} bits)"
                 parity_tag = hmac_sha256(self.auth_key, parity_msg)
                 auth_log.append(("Error correction parity exchange", parity_tag[:16]))
 
-            # Authenticate privacy amplification matrix
             if self.enable_pa:
                 pa_msg = f"PA matrix (final length {final_len})"
                 pa_tag = hmac_sha256(self.auth_key, pa_msg)
                 auth_log.append(("Privacy amplification matrix", pa_tag[:16]))
 
-        # Build result dictionary
         return {
             "aborted": False,
             "qber": qber,
@@ -434,7 +351,7 @@ class BB84Simulation:
 
 
 # -----------------------------------------------------------------------------
-# UI CODE
+# UI CODE (Light theme)
 # -----------------------------------------------------------------------------
 st.title("⚛️ BB84 Quantum Key Distribution Simulator")
 st.markdown("""
@@ -444,7 +361,6 @@ eavesdropping, basis reconciliation, error correction, and privacy amplification
 
 st.sidebar.header("⚙️ Simulation Parameters")
 
-# Random seed
 seed = st.sidebar.number_input(
     "Random Seed",
     min_value=0,
@@ -506,7 +422,6 @@ enable_ec = st.sidebar.checkbox("Enable Error Correction", value=True)
 enable_pa = st.sidebar.checkbox("Enable Privacy Amplification", value=True)
 enable_auth = st.sidebar.checkbox("Enable Authenticated Classical Channel", value=True)
 
-# Run simulation
 sim = BB84Simulation(
     num_qubits=total_qubits,
     eve_prob=eve_prob,
@@ -538,7 +453,6 @@ with col4:
         match = "MATCH ✅" if results["keys_match"] else "MISMATCH ❌"
     st.metric("Final Key Match", match)
 
-# Security alert
 if results["aborted"]:
     st.error(f"🚨 **Protocol Aborted:** {results['reason']}")
 else:
@@ -561,9 +475,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.subheader("Channel Statistics")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
-    fig.patch.set_facecolor('#080E1E')
+    # Light background for figures
+    fig.patch.set_facecolor('white')
 
-    # Pie chart – fixed legend overlap
     labels = ['QBER Test', 'Final Key (after EC/PA)', 'Basis Mismatch', 'Raw (post‑sift, pre‑EC)']
     sizes = [
         results['sacrifice_len'],
@@ -571,44 +485,42 @@ with tab1:
         total_qubits - results['sifted_len'],
         results['remaining_raw_len'] - results['final_len']
     ]
-    colors = ['#FFC107', '#00E5FF', '#1E2D5A', '#5B6B8A']
+    colors = ['#FFC107', '#00B4D8', '#D3D3D3', '#90A4AE']
 
     wedges, _, _ = ax1.pie(
         sizes,
-        labels=None,                 # no internal labels
+        labels=None,
         autopct='%1.1f%%',
         startangle=140,
         colors=colors,
         pctdistance=0.8,
-        textprops=dict(color="w", fontsize=10)
+        textprops=dict(color="black", fontsize=10)
     )
     ax1.legend(
         wedges,
         labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.1),
+        bbox_to_anchor=(0.5, -0.05),
         ncol=2,
         frameon=False,
         fontsize=10
     )
-    ax1.set_title("Photon Utilisation", color='#00E5FF', pad=15)
+    ax1.set_title("Photon Utilisation", color='black', pad=15)
 
-    # Bar chart
     bars = ax2.bar(['Estimated QBER', 'Abort Threshold'],
                    [results['qber']*100, abort_threshold*100],
-                   color=['#FF4B4B' if results['qber'] >= abort_threshold else '#00E5FF', '#1E2D5A'])
-    ax2.set_ylabel("Error Rate (%)", color='w')
-    ax2.set_title("QBER vs Threshold", color='#00E5FF', pad=15)
-    ax2.tick_params(colors='w')
+                   color=['#FF4B4B' if results['qber'] >= abort_threshold else '#00B4D8', '#D3D3D3'])
+    ax2.set_ylabel("Error Rate (%)", color='black')
+    ax2.set_title("QBER vs Threshold", color='black', pad=15)
+    ax2.tick_params(colors='black')
     for bar in bars:
         height = bar.get_height()
         ax2.annotate(f'{height:.2f}%', xy=(bar.get_x()+bar.get_width()/2, height),
-                     xytext=(0,3), textcoords="offset points", ha='center', color='w')
+                     xytext=(0,3), textcoords="offset points", ha='center', color='black')
 
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
-    # Additional metrics
     colA, colB, colC = st.columns(3)
     colA.metric("Errors Corrected (EC)", results['ec_errors_corrected'])
     colB.metric("Parity Bits Leaked (EC)", results['parity_leaked'])
@@ -620,7 +532,6 @@ with tab2:
     pol_symbols = {0.0: "↑ (0°)", 90.0: "→ (90°)", 45.0: "↗ (45°)", 135.0: "↖ (135°)"}
     records = []
     for i in range(total_qubits):
-        # Determine Alice's state
         if sim.alice.bases[i] == 'Z':
             state = 0.0 if sim.alice.bits[i] == 0 else 90.0
         else:
@@ -643,8 +554,8 @@ with tab2:
     df = pd.DataFrame(records)
     def style_row(row):
         if row["Bases Match"] == "YES":
-            return ["background-color: #12253B; color: #00E5FF"]*len(row)
-        return ["background-color: #0A0F1D; color: #5B6B8A"]*len(row)
+            return ["background-color: #E3F2FD; color: #000000"]*len(row)
+        return ["background-color: #FFFFFF; color: #666666"]*len(row)
     st.dataframe(df.style.apply(style_row, axis=1), use_container_width=True, height=450)
 
 # ----- Tab 3: Key Distillation -----
