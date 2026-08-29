@@ -355,8 +355,7 @@ class BB84Simulation:
 # -----------------------------------------------------------------------------
 st.title("⚛️ BB84 Quantum Key Distribution Simulator")
 st.markdown("""
-This simulator demonstrates the BB84 protocol, including quantum transmission,  
-eavesdropping, basis reconciliation, error correction, and privacy amplification.
+This simulator demonstrates the BB84 protocol, including quantum transmission, eavesdropping, basis reconciliation, error correction, and privacy amplification.
 """)
 
 st.sidebar.header("⚙️ Simulation Parameters")
